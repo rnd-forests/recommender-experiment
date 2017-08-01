@@ -1,8 +1,3 @@
-
-# coding: utf-8
-
-# In[9]:
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
@@ -32,9 +27,12 @@ class Recommender:
         self.data = data or self.load_data()
 
     def recommend(self, uids, n_items=10, verbose=False):
+        if verbose:
+            print('■ ■ ■ {} ■ ■ ■'.format(self.algorithm.__name__))
+
         # Assign original data to a temporary variable
         data = self.data
-        
+
         # Path to the serialized model
         trained_model = os.path.expanduser(self.dump_file_name)
 
@@ -54,10 +52,9 @@ class Recommender:
             # Assign new ratings to the original data
             data.raw_ratings = trainset_raw_ratings
 
-            """Perform Grid Search
-            TODO: implement Random Search or Bayesian Optimization to increase performance
-                  and accurary of the hyperparameter tuning process
-            """
+            # Perform Grid Search
+            # TODO: implement Random Search or Bayesian Optimization to increase performance
+            #       and accurary of the hyperparameter tuning process
             if self.perf_measure not in ['rmse', 'mae']:
                 raise ValueError('■ Invalid accuracy measurement provided')
 
@@ -100,12 +97,12 @@ class Recommender:
         trainset = data.build_full_trainset()
         testset = trainset.build_anti_testset()
         predictions = algo.test(testset)
-        
+
         if self.dump_model:
             if verbose:
                 print('■ Saving the trained model')
             dump.dump(trained_model, predictions, algo, verbose)
-                
+
         accuracy.mae(predictions)
         accuracy.rmse(predictions)
 
@@ -130,27 +127,25 @@ class Recommender:
 
     def get_top_n(self, predictions, n):
         top_n = defaultdict(list)
-        for uid, iid, _, est, details in predictions:
-            top_n[uid].append((iid, est, details))
+        for uid, iid, r_ui, est, _ in predictions:
+            info = {'iid': iid, 'r_ui': "%.2f" % r_ui, 'est': "%.2f" % est}
+            top_n[uid].append(info.copy())
 
         for uid, ratings in top_n.items():
-            ratings.sort(key=lambda x: x[1], reverse=True)
+            ratings.sort(key=lambda x: x['est'], reverse=True)
             top_n[uid] = ratings[:n]
 
         return top_n
 
 
-# In[12]:
-
 uids = [1, 2, 3]
 pp = pprint.PrettyPrinter()
 
 
-# In[23]:
-
+"""Neighborhood-based collaborative filtering (kNN-basic)
+"""
 from surprise import KNNBasic
 
-# Neighborhood-based collaborative filtering (kNN-basic)
 param_grid = {'k': [20, 40, 60]}
 sim_options = {'name': 'pearson_baseline', 'user_based': True}
 recommender = Recommender(algorithm=KNNBasic,
@@ -166,11 +161,10 @@ print('■ Recommendations:')
 pp.pprint(recommendations)
 
 
-# In[24]:
-
+"""Neighborhood-based collaborative filtering (kNN-baseline)
+"""
 from surprise import KNNBaseline
 
-# Neighborhood-based collaborative filtering (kNN-baseline)
 param_grid = {'k': [20, 40, 60]}
 bsl_options = {'method': 'sgd', 'learning_rate': 0.0007}
 sim_options = {'name': 'pearson_baseline', 'user_based': True}
@@ -187,11 +181,10 @@ print('■ Recommendations:')
 pp.pprint(recommendations)
 
 
-# In[25]:
-
+"""Matrix factorization - SVD using Stochastic Gradient Descent
+"""
 from surprise import SVD
 
-# Matrix factorization - SVD using Stochastic Gradient Descent
 bsl_options = {'method': 'sgd'}
 param_grid = {'n_factors': [20, 50], 'lr_all': [0.0003, 0.0007]}
 recommender = Recommender(algorithm=SVD,
@@ -207,11 +200,10 @@ print('■ Recommendations:')
 pp.pprint(recommendations)
 
 
-# In[37]:
-
+"""Matrix factorization - SVD++ using Alternating Least Squares
+"""
 from surprise import SVDpp
 
-# Matrix factorization - SVD++ using Alternating Least Squares
 bsl_options = {'method': 'als'}
 param_grid = {'n_epochs': [20, 30], 'reg_all': [0.01, 0.02]}
 recommender = Recommender(algorithm=SVDpp,
@@ -227,11 +219,10 @@ print('■ Recommendations:')
 pp.pprint(recommendations)
 
 
-# In[26]:
-
+"""Slope One
+"""
 from surprise import SlopeOne
 
-# Slope One
 recommender = Recommender(algorithm=SlopeOne,
                           param_grid={},
                           bsl_options={},
@@ -244,11 +235,10 @@ recommendations = recommender.recommend(uids=uids, verbose=True)
 pp.pprint(recommendations)
 
 
-# In[27]:
-
+"""Co-Clustering
+"""
 from surprise import CoClustering
 
-# Co-Clustering
 param_grid = {'n_epochs': [20, 40], 'n_cltr_u': [3, 5], 'n_cltr_i': [3, 5]}
 recommender = Recommender(algorithm=CoClustering,
                           param_grid=param_grid,
@@ -263,65 +253,9 @@ print('■ Recommendations:')
 pp.pprint(recommendations)
 
 
-# In[28]:
-
-import pandas as pd
-get_ipython().magic('matplotlib inline')
-import matplotlib.pyplot as plt
-
-def load_data_into_dataframe(path):
-    if not os.path.exists(path):
-        raise RuntimeError('Cannot find the given dataset!')
-    df = pd.read_csv(path, sep='\t', names=['UserID', 'ItemID', 'Rating', 'Timestamp'])
-    return df
-
-path = os.path.expanduser('~/.surprise_data/ml-100k/ml-100k/u.data')
-df = load_data_into_dataframe(path)
-
-
-# In[29]:
-
-print(df.shape)
-
-
-# In[30]:
-
-print(df.columns)
-
-
-# In[31]:
-
-print(df.head())
-
-
-# In[32]:
-
-print(df.info())
-
-
-# In[33]:
-
-print(df.describe())
-
-
-# In[34]:
-
-plt.hist(df['Rating'])
-
-
-# In[35]:
-
-df.groupby(['Rating'])['UserID'].count()
-
-
-# In[36]:
-
-plt.hist(df.groupby(['ItemID'])['ItemID'].count())
-
-
-# In[19]:
-
-from surprise import Reader
+"""VIBLO
+"""
+from surprise import SVDpp, Reader
 
 def load_viblo_data(path, rating_scale):
     file_path = os.path.expanduser(path)
@@ -331,15 +265,8 @@ def load_viblo_data(path, rating_scale):
     data = Dataset.load_from_file(file_path=file_path, reader=reader)
     return data
 
-
-# In[20]:
-
-from surprise import SVDpp
 votes = load_viblo_data('./data/votes.csv', (-1, 1))
 clips = load_viblo_data('./data/clips.csv', (0, 1))
-
-
-# In[21]:
 
 bsl_options = {'method': 'als'}
 param_grid = {'n_epochs': [20, 30], 'n_factors': [20, 50], 'reg_all': [0.01, 0.02]}
@@ -355,9 +282,6 @@ recommendations = recommender.recommend(uids=[2, 9, 21, 86, 14239, 14300], verbo
 print('■ Recommendations:')
 pp.pprint(recommendations)
 
-
-# In[22]:
-
 bsl_options = {'method': 'sgd'}
 param_grid = {'n_epochs': [20, 30], 'n_factors': [20, 50], 'reg_all': [0.01, 0.02]}
 recommender = Recommender(algorithm=SVDpp,
@@ -371,4 +295,3 @@ recommender = Recommender(algorithm=SVDpp,
 recommendations = recommender.recommend(uids=[2, 5010, 5081, 12758, 12825, 13072], verbose=True)
 print('■ Recommendations:')
 pp.pprint(recommendations)
-
