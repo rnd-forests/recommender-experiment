@@ -1,2 +1,8 @@
 /.idea
-/.ipynb_checkpoints
+/.ipynb_checkpoints 
+co_clustering
+knn_baseline
+knn_basic
+slope_one
+svd
+svdpp
