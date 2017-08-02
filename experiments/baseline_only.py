@@ -3,7 +3,7 @@ Baseline only
 """
 
 from surprise import BaselineOnly
-from rs import Recommender, pretty_print
+from rs import Recommender, pretty_print, get_dump_path
 
 uids = [1, 2, 3]
 param_grid = {'bsl_options': [{'method': 'als', 'n_epochs': 30},
@@ -12,6 +12,6 @@ param_grid = {'bsl_options': [{'method': 'als', 'n_epochs': 30},
 recommender = Recommender(algorithm=BaselineOnly,
                           param_grid=param_grid,
                           dump_model=True,
-                          dump_file_name='./trained_models/baseline_only')
+                          dump_file_name=get_dump_path('baseline_only'))
 
 pretty_print(recommender.recommend(uids=uids, verbose=True))

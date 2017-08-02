@@ -3,7 +3,7 @@ Neighborhood-based collaborative filtering (kNN-baseline)
 """
 
 from surprise import KNNBaseline
-from rs import Recommender, pretty_print
+from rs import Recommender, pretty_print, get_dump_path
 
 uids = [1, 2, 3]
 param_grid = {'k': [20, 40],
@@ -15,6 +15,6 @@ param_grid = {'k': [20, 40],
 recommender = Recommender(algorithm=KNNBaseline,
                           param_grid=param_grid,
                           dump_model=True,
-                          dump_file_name='./trained_models/knn_baseline')
+                          dump_file_name=get_dump_path('knn_baseline'))
 
 pretty_print(recommender.recommend(uids=uids, verbose=True))

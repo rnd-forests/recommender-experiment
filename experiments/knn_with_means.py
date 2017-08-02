@@ -3,7 +3,7 @@ Neighborhood-based collaborative filtering (kNN-with-means)
 """
 
 from surprise import KNNWithMeans
-from rs import Recommender, pretty_print
+from rs import Recommender, pretty_print, get_dump_path
 
 uids = [1, 2, 3]
 param_grid = {'k': [20, 40],
@@ -16,6 +16,6 @@ param_grid = {'k': [20, 40],
 recommender = Recommender(algorithm=KNNWithMeans,
                           param_grid=param_grid,
                           dump_model=True,
-                          dump_file_name='./trained_models/knn_with_means')
+                          dump_file_name=get_dump_path('knn_with_means'))
 
 pretty_print(recommender.recommend(uids=uids, verbose=True))

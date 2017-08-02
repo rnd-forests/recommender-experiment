@@ -143,8 +143,8 @@ class Recommender:
     @staticmethod
     def get_top_n(predictions, n):
         top_n = defaultdict(list)
-        for uid, iid, r_ui, est, _ in predictions:
-            info = {'iid': iid, 'r_ui': "%.2f" % r_ui, 'est': "%.2f" % est}
+        for uid, iid, _, est, _ in predictions:
+            info = {'iid': iid, 'est': "%.2f" % est}
             top_n[uid].append(info.copy())
 
         for uid, ratings in top_n.items():

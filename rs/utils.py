@@ -1,17 +1,25 @@
+import os
 import pprint
 import pandas as pd
 from numbers import Number
 from functools import partial
 from inspect import isroutine
+from tabulate import tabulate
 
 def pretty_print(data, description='■ Recommendations:'):
     print(description)
     if isinstance(data, dict):
         df = pd.DataFrame.from_dict(data)
-        print(df)
+        print(tabulate(df, headers='keys', tablefmt='orgtbl'))
+    elif isinstance(data, pd.DataFrame):
+        print(tabulate(data, headers='keys', tablefmt='orgtbl'))
     else:
         pp = pprint.PrettyPrinter()
         pp.pprint(data)
+
+def get_dump_path(name):
+    path = os.path.expanduser('~/code/recommender-notebook/experiments/trained_models/{}'.format(name))
+    return path
 
 def print_object(obj):
     print(ppretty(obj,
