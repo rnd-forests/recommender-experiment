@@ -1,5 +1,6 @@
 import os
 import pprint
+import configparser
 import pandas as pd
 from numbers import Number
 from functools import partial
@@ -7,6 +8,8 @@ from inspect import isroutine
 from tabulate import tabulate
 
 def pretty_print(data, description='■ Recommendations:'):
+    """Print pandas data frame as table or default Python to pretty printer
+    """
     print(description)
     if isinstance(data, dict):
         df = pd.DataFrame.from_dict(data)
@@ -17,23 +20,66 @@ def pretty_print(data, description='■ Recommendations:'):
         pp = pprint.PrettyPrinter()
         pp.pprint(data)
 
+
+def parse_config(section, key, ini_file_path='../config.ini'):
+    """Parse the configuration file and return option value associated with a key in a specified section
+    """
+    def in_ipython():
+        try:
+            __IPYTHON__
+            return True
+        except NameError:
+            return False
+
+    config = configparser.ConfigParser()
+    ini_file = 'config.ini' if in_ipython() else '../config.ini'
+    config.read(ini_file)
+    contents = config_section_map(config, section)
+    if key not in contents:
+        raise ValueError('Invalid key provided')
+    return contents[key]
+
+
+def config_section_map(config, section):
+    """Get the contents of a configuration section as a dictionary
+    """
+    data = {}
+    options = config.options(section)
+    for option in options:
+        try:
+            data[option] = config.get(section, option)
+            if data[option] == -1:
+                print("skip: %s" % option)
+        except:
+            print("exception on %s!" % option)
+            data[option] = None
+    return data
+
+
 def get_dump_path(name):
-    path = os.path.expanduser('~/code/recommender-notebook/experiments/trained_models/{}'.format(name))
+    """Get the path where the dumped model binary file will be stored
+    """
+    base = parse_config('Path', 'trained')
+    path = os.path.expanduser(base + '/' + name)
     return path
 
+
 def print_object(obj):
-    print(ppretty(obj,
+    """Print object properties in formatted style
+    """
+    print(ppretty_obj(obj,
           seq_length=10,
           show_protected=True,
           show_static=True,
           show_properties=True,
           show_address=True))
 
-# Source: https://github.com/symonsoft/ppretty
-def ppretty(obj, indent='    ', depth=4, width=72, seq_length=5,
-            show_protected=False, show_private=False, show_static=False,
-            show_properties=False, show_address=False, str_length=50):
 
+def ppretty_obj(obj, indent='    ', depth=4, width=72, seq_length=5,
+                show_protected=False, show_private=False, show_static=False,
+                show_properties=False, show_address=False, str_length=50):
+    """Source: https://github.com/symonsoft/ppretty
+    """
     seq_brackets = {list: ('[', ']'), tuple: ('(', ')'), set: ('set([', '])'), dict: ('{', '}')}
     seq_types = tuple(seq_brackets.keys())
 
