@@ -3,7 +3,7 @@ Neighborhood-based collaborative filtering (kNN-basic)
 """
 
 from surprise import KNNBasic
-from rs import Recommender, pretty_print, get_dump_path
+from rs import Recommender, get_dump_path
 
 uids = [1, 2, 3]
 param_grid = {'k': [20, 40],
@@ -18,4 +18,4 @@ recommender = Recommender(algorithm=KNNBasic,
                           dump_model=True,
                           dump_file_name=get_dump_path('knn_basic'))
 
-pretty_print(recommender.recommend(uids=uids, verbose=True))
+recommender.recommend(uids=uids, verbose=True)

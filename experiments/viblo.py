@@ -1,6 +1,6 @@
 import os
 from surprise import SVD, Reader, Dataset
-from rs import Recommender, pretty_print, parse_config, get_dump_path
+from rs import Recommender, parse_config, get_dump_path
 
 def load_viblo_data(path, rating_scale):
     file_path = os.path.expanduser(path)
@@ -18,14 +18,15 @@ votes = load_viblo_data(data_path + '/votes.csv', (-1, 1))
 clips = load_viblo_data(data_path + '/clips.csv', (0, 1))
 
 print('■ Voting data')
-param_grid = {'n_epochs': [20, 30, 50], 'n_factors': [20, 50], 'reg_all': [0.01, 0.02]}
+param_grid = {'n_epochs': [20, 30], 'n_factors': [20, 50]}
 recommender = Recommender(algorithm=SVD,
                           param_grid=param_grid,
                           data=votes,
+                          rating_threshold=0.5,
                           dump_model=True,
                           dump_file_name=get_dump_path('viblo_votes'))
 
-pretty_print(recommender.recommend(uids=[2, 9, 21], verbose=True))
+recommender.recommend(uids=[2, 9, 21], verbose=True)
 
 print()
 print('■ Clipping data')
@@ -33,7 +34,8 @@ param_grid = {'n_epochs': [20, 30], 'n_factors': [20, 50]}
 recommender = Recommender(algorithm=SVD,
                           param_grid=param_grid,
                           data=clips,
+                          rating_threshold=1,
                           dump_model=True,
                           dump_file_name=get_dump_path('viblo_clips'))
 
-pretty_print(recommender.recommend(uids=[2, 12825, 13072], verbose=True))
+recommender.recommend(uids=[2, 12825, 13072], verbose=True)
