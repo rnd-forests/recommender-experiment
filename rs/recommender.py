@@ -10,6 +10,7 @@ from collections import defaultdict
 from surprise import GridSearch, Dataset, accuracy, dump
 from .utils import precision_recall_at_k, print_object, pretty_print
 
+
 class Recommender:
     def __init__(self, algorithm,
                  param_grid=None, bsl_options=None, sim_options=None, perf_measure='rmse',

@@ -7,6 +7,8 @@ from functools import partial
 from inspect import isroutine
 from tabulate import tabulate
 from collections import defaultdict
+from surprise import Reader, Dataset
+
 
 def precision_recall_at_k(predictions, k=10, threshold=3.5):
     """Return Precision and recall at k metrics for each user.
@@ -53,6 +55,18 @@ def precision_recall_at_k(predictions, k=10, threshold=3.5):
         precision_recall_k[uid] = (precision_at_k, recall_at_k)
 
     return precision_recall_k
+
+
+def load_data_from_file(path, rating_scale):
+    file_path = os.path.expanduser(path)
+    if not os.path.exists(file_path):
+        raise RuntimeError('Cannot find the given dataset')
+    reader = Reader(line_format='user item rating',
+                    sep=',',
+                    rating_scale=rating_scale,
+                    skip_lines=1)
+    data = Dataset.load_from_file(file_path=file_path, reader=reader)
+    return data
 
 
 def pretty_print(data):
@@ -115,11 +129,11 @@ def print_object(obj):
     """Print object properties in formatted style
     """
     print(ppretty_obj(obj,
-          seq_length=10,
-          show_protected=True,
-          show_static=True,
-          show_properties=True,
-          show_address=True))
+                      seq_length=10,
+                      show_protected=True,
+                      show_static=True,
+                      show_properties=True,
+                      show_address=True))
 
 
 def ppretty_obj(obj, indent='    ', depth=4, width=72, seq_length=5,
@@ -205,7 +219,8 @@ def ppretty_obj(obj, indent='    ', depth=4, width=72, seq_length=5,
                     else:
                         (k, v) = i
                         k = [k]
-                        v = inspect_nested_object(v) if type(v) is not ErrorAttr else ['<Error attribute: ' + type(v.e).__name__ + ': ' + v.e.message + '>']
+                        v = inspect_nested_object(v) if type(v) is not ErrorAttr else [
+                            '<Error attribute: ' + type(v.e).__name__ + ': ' + v.e.message + '>']
                         k[-1] += ' = ' + v.pop(0)
                         r.extend(k)
                         r.extend(format_block(v))
