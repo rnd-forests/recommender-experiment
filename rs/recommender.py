@@ -137,17 +137,18 @@ class Recommender:
         accuracy.rmse(predictions)
 
         # Print Precision and Recall scores
-        self.print_precision_call(predictions, uids, n_items)
+        # self.print_precision_call(predictions, uids, n_items)
+
+        recommendations = self.get_recommendations_for_users(uids, predictions, n_items)
 
         # Calculate execution time
         duration = default_timer() - start
         duration = datetime.timedelta(seconds=math.ceil(duration))
         print('■ Time elapsed:', duration)
 
-        recommendations = self.get_recommendations_for_users(uids, predictions, n_items)
-        if verbose:
-            print('■ Recommendations:')
-            pretty_print(recommendations)
+        # if verbose:
+        #     print('■ Recommendations:')
+        #     pretty_print(recommendations)
 
         return recommendations
 

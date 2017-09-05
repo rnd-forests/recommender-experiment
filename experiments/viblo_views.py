@@ -1,18 +1,18 @@
+import json
 from surprise import SVD
-from rs import Recommender, load_data_from_file, parse_config, get_dump_path
+from rs import Recommender, load_data_from_file, parse_config
 
 
 path = parse_config(section='Path', key='data') + '/views.csv'
-views = load_data_from_file(path, (1, 240))
+views = load_data_from_file(path, (1, 50))
 
 print('■ Views data')
-param_grid = {'n_epochs': [20, 30], 'n_factors': [20, 50]}
+param_grid = {'n_factors': [100, 150]}
 recommender = Recommender(algorithm=SVD,
                           param_grid=param_grid,
                           data=views,
-                          rating_threshold=15,
-                          dump_model=True,
-                          dump_file_name=get_dump_path('viblo_views'))
+                          rating_threshold=10)
 
-recommendations = recommender.recommend(uids=[1087])
-print(recommendations)
+recommendations = recommender.recommend(uids=[1087], n_items=10, verbose=True)
+with open('data.json', 'w') as file:
+    json.dump(recommendations, file)
