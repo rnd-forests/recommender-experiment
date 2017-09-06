@@ -1,9 +1,4 @@
 /.idea
 /.ipynb_checkpoints
 /rs/__pycache__
-co_clustering
-knn_baseline
-knn_basic
-slope_one
-svd
-svdpp
+data.json

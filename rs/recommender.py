@@ -117,7 +117,8 @@ class Recommender:
             print('■ Using the best estimator on full dataset')
         data = self.data
         trainset = data.build_full_trainset()
-        testset = trainset.build_anti_testset()
+        # testset = trainset.build_anti_testset()  # May cause problem when dataset is large
+        testset = trainset.build_testset()
 
         start = default_timer()
 
@@ -137,7 +138,7 @@ class Recommender:
         accuracy.rmse(predictions)
 
         # Print Precision and Recall scores
-        # self.print_precision_call(predictions, uids, n_items)
+        self.print_precision_call(predictions, uids, n_items)
 
         recommendations = self.get_recommendations_for_users(uids, predictions, n_items)
 
@@ -146,9 +147,9 @@ class Recommender:
         duration = datetime.timedelta(seconds=math.ceil(duration))
         print('■ Time elapsed:', duration)
 
-        # if verbose:
-        #     print('■ Recommendations:')
-        #     pretty_print(recommendations)
+        if verbose:
+            print('■ Recommendations:')
+            pretty_print(recommendations)
 
         return recommendations
 

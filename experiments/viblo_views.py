@@ -3,7 +3,7 @@ from surprise import SVD
 from rs import Recommender, load_data_from_file, parse_config
 
 
-path = parse_config(section='Path', key='data') + '/views.csv'
+path = parse_config(section='Path', key='data') + '/views_without_ips.csv'
 views = load_data_from_file(path, (1, 50))
 
 print('■ Views data')
@@ -13,6 +13,7 @@ recommender = Recommender(algorithm=SVD,
                           data=views,
                           rating_threshold=10)
 
-recommendations = recommender.recommend(uids=[1087], n_items=10, verbose=True)
+data = recommender.recommend(uids=[1087], n_items=10, verbose=True)
+
 with open('data.json', 'w') as file:
-    json.dump(recommendations, file)
+    json.dump(data, file)
