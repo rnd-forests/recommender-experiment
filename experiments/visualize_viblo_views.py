@@ -43,7 +43,7 @@ print(ip_free_data.info(), "\n")
 print(ip_free_data.describe())
 
 bins = np.sort(ip_free_data['Rating'].unique())
-plt.hist(ip_free_data['Rating'], bins=bins, facecolor='blue', log=True,
+plt.hist(ip_free_data['Rating'], bins=bins, facecolor='red', log=True,
          alpha=0.85, edgecolor="white", label="Post Views (Without IP Addresses)")
 plt.xlabel("View Count")
 plt.ylabel("Log Count")
