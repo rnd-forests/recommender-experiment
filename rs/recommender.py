@@ -14,32 +14,33 @@ from .utils import precision_recall_at_k, print_object, pretty_print
 class Recommender:
     def __init__(self, algorithm=SVD,
                  param_grid=None, bsl_options=None, sim_options=None, perf_measure='rmse',
-                 data=None, rating_threshold=3.5, trainset_size=0.8, n_folds=5,
-                 dump_model=False, dump_file_name=''):
+                 data=None, rating_threshold=3.5, trainset_size=0.8, n_folds=5, anti_testset=True,
+                 dump_model=False, dump_file_name='recommender'):
 
-        self.algorithm = algorithm  # The estimator
-        self.param_grid = param_grid if param_grid is not None else {}  # Parameter list used for grid search
-        self.bsl_options = bsl_options  # Baseline options
-        self.sim_options = sim_options  # Similarity options
-        self.perf_measure = perf_measure  # Performance measure (RMSE, MAE, FCP)
+        self.algorithm = algorithm
+        self.param_grid = param_grid if param_grid is not None else {}
+        self.bsl_options = bsl_options
+        self.sim_options = sim_options
+        self.perf_measure = perf_measure
 
-        self.data = data if data is not None else self.load_data()  # The data used for algorithm
-        self.rating_threshold = rating_threshold  # Used for calculate precision-recall scores
-        self.trainset_size = trainset_size  # The ratio to split original dataset
-        self.n_folds = n_folds  # The number of folds in cross-validation
+        self.data = data if data is not None else self.load_data()
+        self.rating_threshold = rating_threshold
+        self.trainset_size = trainset_size
+        self.n_folds = n_folds
+        self.anti_testset = anti_testset
 
         self.dump_model = dump_model
         self.dump_file_name = dump_file_name
 
-    def recommend(self, uids, n_items=100, verbose=False):
+    def recommend(self, uids, n_items=10, verbose=False):
         if verbose:
             print('■ ■ ■ {} ■ ■ ■'.format(self.algorithm.__name__))
 
-        data = self.data  # Cache the original data
-        trained_model = os.path.expanduser(self.dump_file_name)  # Path to the serialized model
+        data = self.data
+        trained_model = os.path.expanduser(self.dump_file_name)
 
         try:
-            _, algo = dump.load(trained_model)  # Load the serialized model
+            _, algo = dump.load(trained_model)
         except FileNotFoundError:
             if verbose:
                 print('■ Performing random sampling on the dataset')
@@ -49,7 +50,7 @@ class Recommender:
             trainset_raw_ratings = raw_ratings[:threshold]
             testset_raw_ratings = raw_ratings[threshold:]
 
-            data.raw_ratings = trainset_raw_ratings  # Assign new ratings to the original data
+            data.raw_ratings = trainset_raw_ratings
 
             if any(self.param_grid):
                 if self.perf_measure not in ['rmse', 'mae', 'fcp']:
@@ -57,7 +58,6 @@ class Recommender:
 
                 if verbose:
                     print('■ Performing Grid Search')
-
                 data.split(n_folds=self.n_folds)
                 grid_search = GridSearch(self.algorithm,
                                          param_grid=self.param_grid,
@@ -70,7 +70,7 @@ class Recommender:
                 if self.bsl_options is not None:
                     algo.bsl_options = self.bsl_options
                 if verbose:
-                    print('■ Grid Search completed. Here is the summary:')
+                    print('■ Grid Search summary')
                     cv_results = grid_search.cv_results
                     del cv_results['scores']
                     df = pd.DataFrame.from_dict(cv_results)
@@ -79,10 +79,10 @@ class Recommender:
                         df = df.sort_values([sort_column], ascending=True)
                     pretty_print(df)
 
-                    print('■ Algorithm properties:')
+                    print('■ Algorithm properties')
                     print_object(algo)
             else:
-                algo = self.algorithm()  # Use the default settings for the algorithm
+                algo = self.algorithm()
 
             algo.verbose = verbose
 
@@ -96,37 +96,32 @@ class Recommender:
                 predictions = algo.test(testset)
                 accuracy.rmse(predictions)
 
-        # Generate top recommendations
         if verbose:
-            print('■ Using the best estimator on full dataset')
+            print('■ Using the best estimator on the full dataset')
         data = self.data
         trainset = data.build_full_trainset()
-        # testset = trainset.build_anti_testset()  # May cause problem when dataset is large
-        testset = trainset.build_testset()
+        if self.anti_testset:
+            testset = trainset.build_anti_testset()
+        else:
+            testset = trainset.build_testset()
 
         start = default_timer()
 
-        # Train and make predictions using best estimator
         algo.train(trainset)
         predictions = algo.test(testset)
 
-        # Dump the trained model to a file
         if self.dump_model:
             if verbose:
                 print('■ Saving the trained model')
             dump.dump(trained_model, predictions, algo, verbose)
 
-        # Display some accuracy scores
-        print('■ Accuracy scores:')
+        print('■ Accuracy scores')
         accuracy.mae(predictions)
         accuracy.rmse(predictions)
 
-        # Print Precision and Recall scores
         self.print_precision_call(predictions, uids, n_items)
-
         recommendations = self.get_recommendations_for_users(uids, predictions, n_items)
 
-        # Calculate execution time
         duration = default_timer() - start
         duration = datetime.timedelta(seconds=math.ceil(duration))
         print('■ Time elapsed:', duration)
@@ -153,7 +148,7 @@ class Recommender:
             all_precision_recall = precision_recall_at_k(predictions, k=n_items, threshold=self.rating_threshold)
             precision_recall = [('', ('Precision', 'Recall'))]
             precision_recall.extend(item for item in all_precision_recall.items() if int(item[0]) in uids)
-            print('■ Precision and Recall:')
+            print('■ Precision and Recall')
             pretty_print(dict(precision_recall))
         except KeyError:
             print('■ Cannot find the given user')
