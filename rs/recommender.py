@@ -69,23 +69,22 @@ class Recommender:
                     algo.sim_options = self.sim_options
                 if self.bsl_options is not None:
                     algo.bsl_options = self.bsl_options
+                if verbose:
+                    print('■ Grid Search completed. Here is the summary:')
+                    cv_results = grid_search.cv_results
+                    del cv_results['scores']
+                    df = pd.DataFrame.from_dict(cv_results)
+                    sort_column = self.perf_measure.upper()
+                    if df.columns.contains(sort_column):
+                        df = df.sort_values([sort_column], ascending=True)
+                    pretty_print(df)
+
+                    print('■ Algorithm properties:')
+                    print_object(algo)
             else:
                 algo = self.algorithm()  # Use the default settings for the algorithm
 
             algo.verbose = verbose
-
-            if verbose and any(self.param_grid):
-                print('■ Grid Search completed. Here is the summary:')
-                cv_results = grid_search.cv_results
-                del cv_results['scores']
-                df = pd.DataFrame.from_dict(cv_results)
-                sort_column = self.perf_measure.upper()
-                if df.columns.contains(sort_column):
-                    df = df.sort_values([sort_column], ascending=True)
-                pretty_print(df)
-
-                print('■ Algorithm properties:')
-                print_object(algo)
 
             if verbose:
                 print('■ Training using trainset')
