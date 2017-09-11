@@ -7,37 +7,27 @@ import numpy as np
 import pandas as pd
 from timeit import default_timer
 from collections import defaultdict
-from surprise import GridSearch, Dataset, accuracy, dump
+from surprise import SVD, GridSearch, Dataset, accuracy, dump
 from .utils import precision_recall_at_k, print_object, pretty_print
 
 
 class Recommender:
-    def __init__(self, algorithm,
+    def __init__(self, algorithm=SVD,
                  param_grid=None, bsl_options=None, sim_options=None, perf_measure='rmse',
                  data=None, rating_threshold=3.5, trainset_size=0.8, n_folds=5,
                  dump_model=False, dump_file_name=''):
 
-        # The estimator
-        self.algorithm = algorithm
-        # Parameter list used in grid search process
-        self.param_grid = param_grid if param_grid is not None else {}
-        # Baseline options
-        self.bsl_options = bsl_options
-        # Similarity options
-        self.sim_options = sim_options
-        # Performance measure (RMSE, MAE, FCP)
-        self.perf_measure = perf_measure
+        self.algorithm = algorithm  # The estimator
+        self.param_grid = param_grid if param_grid is not None else {}  # Parameter list used for grid search
+        self.bsl_options = bsl_options  # Baseline options
+        self.sim_options = sim_options  # Similarity options
+        self.perf_measure = perf_measure  # Performance measure (RMSE, MAE, FCP)
 
-        # The data used for algorithm (use movie-lens dataset as default)
-        self.data = data if data is not None else self.load_data()
-        # Used for calculate precision-recall scores
-        self.rating_threshold = rating_threshold
-        # The ratio in which the original dataset is split
-        self.trainset_size = trainset_size
-        # The number of folds to split when performing cross-validation
-        self.n_folds = n_folds
+        self.data = data if data is not None else self.load_data()  # The data used for algorithm
+        self.rating_threshold = rating_threshold  # Used for calculate precision-recall scores
+        self.trainset_size = trainset_size  # The ratio to split original dataset
+        self.n_folds = n_folds  # The number of folds in cross-validation
 
-        # Dumping model options
         self.dump_model = dump_model
         self.dump_file_name = dump_file_name
 
@@ -45,17 +35,12 @@ class Recommender:
         if verbose:
             print('■ ■ ■ {} ■ ■ ■'.format(self.algorithm.__name__))
 
-        # Assign original data to a temporary variable
-        data = self.data
-
-        # Path to the serialized model
-        trained_model = os.path.expanduser(self.dump_file_name)
+        data = self.data  # Cache the original data
+        trained_model = os.path.expanduser(self.dump_file_name)  # Path to the serialized model
 
         try:
-            # Load the serialized model or perform training again
-            _, algo = dump.load(trained_model)
+            _, algo = dump.load(trained_model)  # Load the serialized model
         except FileNotFoundError:
-            # Perform random sampling on the raw ratings
             if verbose:
                 print('■ Performing random sampling on the dataset')
             raw_ratings = data.raw_ratings
@@ -64,30 +49,32 @@ class Recommender:
             trainset_raw_ratings = raw_ratings[:threshold]
             testset_raw_ratings = raw_ratings[threshold:]
 
-            # Assign new ratings to the original data
-            data.raw_ratings = trainset_raw_ratings
+            data.raw_ratings = trainset_raw_ratings  # Assign new ratings to the original data
 
-            # Perform Grid Search
-            if self.perf_measure not in ['rmse', 'mae', 'fcp']:
-                raise ValueError('■ Invalid accuracy measurement provided')
+            if any(self.param_grid):
+                if self.perf_measure not in ['rmse', 'mae', 'fcp']:
+                    raise ValueError('■ Invalid accuracy measurement provided')
 
-            if verbose:
-                print('■ Performing Grid Search')
+                if verbose:
+                    print('■ Performing Grid Search')
 
-            data.split(n_folds=self.n_folds)
-            grid_search = GridSearch(self.algorithm,
-                                     param_grid=self.param_grid,
-                                     measures=[self.perf_measure],
-                                     verbose=verbose)
-            grid_search.evaluate(data)
-            algo = grid_search.best_estimator[self.perf_measure]
-            if self.sim_options is not None:
-                algo.sim_options = self.sim_options
-            if self.bsl_options is not None:
-                algo.bsl_options = self.bsl_options
+                data.split(n_folds=self.n_folds)
+                grid_search = GridSearch(self.algorithm,
+                                         param_grid=self.param_grid,
+                                         measures=[self.perf_measure],
+                                         verbose=verbose)
+                grid_search.evaluate(data)
+                algo = grid_search.best_estimator[self.perf_measure]
+                if self.sim_options is not None:
+                    algo.sim_options = self.sim_options
+                if self.bsl_options is not None:
+                    algo.bsl_options = self.bsl_options
+            else:
+                algo = self.algorithm()  # Use the default settings for the algorithm
+
             algo.verbose = verbose
 
-            if verbose:
+            if verbose and any(self.param_grid):
                 print('■ Grid Search completed. Here is the summary:')
                 cv_results = grid_search.cv_results
                 del cv_results['scores']
@@ -101,12 +88,10 @@ class Recommender:
                 print_object(algo)
 
             if verbose:
-                # Retrain on the whole train set
                 print('■ Training using trainset')
                 trainset = data.build_full_trainset()
                 algo.train(trainset)
 
-                # Test on the testset
                 print('■ Evaluating using testset')
                 testset = data.construct_testset(testset_raw_ratings)
                 predictions = algo.test(testset)
@@ -166,8 +151,7 @@ class Recommender:
         if not uids:
             raise ValueError('■ Invalid users provided')
         try:
-            all_precision_recall = precision_recall_at_k(predictions, k=n_items,
-                                                         threshold=self.rating_threshold)
+            all_precision_recall = precision_recall_at_k(predictions, k=n_items, threshold=self.rating_threshold)
             precision_recall = [('', ('Precision', 'Recall'))]
             precision_recall.extend(item for item in all_precision_recall.items() if int(item[0]) in uids)
             print('■ Precision and Recall:')
